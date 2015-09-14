@@ -4,6 +4,9 @@ author: "Sean Clarke"
 date: "14 September 2015"
 output: html_document
 ---
+
+# Data preperation
+
 ```{r}
 # Download the data if we dont have it, then load te training data
 DataDir <- "Data"
@@ -18,5 +21,37 @@ download.file("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.
 if (! file.exists(FilePathTest)){
 download.file("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv",FilePathTest , method="curl")
 }
-pml-training <- read.csv(FilePathTrain, stringsAsFactors = FALSE)
+pmltraining <- read.csv(FilePathTrain, stringsAsFactors = FALSE, na.strings = c("", "NA", "#DIV/0!"))
 ```
+
+When we read in the data, we tidy up some of the mess including NA as a string, "DIV/0!" and null cells by using the na.strings argument to read.csv. After doing this, we see a few colums that contain nothing but NAs so we remove those and we convert classes to factors
+
+```{r}
+pmltraining <- pmltraining[, colSums(is.na(pmltraining)) != nrow(pmltraining)]
+pmltraining$classe <- factor(pmltraining$classe)
+pmltraining$new_window <- factor(pmltraining$new_window)
+# Remove columns where number of NAs = nrows
+```
+
+If we look at the variables in the dataset, we see that some summarised data is included (maximum/minimum/mean.standard deviation/variance) - we proceed to remove these variables from the dataset.
+
+```{r}
+names(pmltraining)
+columnsToRemove <- grep("^var.*|^stddev.*|^max.*|^min.*|^avg.*|^total.*|.*timestamp.*",names(pmltraining))
+pmltraining <- pmltraining[-columnsToRemove]
+names(pmltraining)
+```
+
+# Data snipped from Web Page
+
+Class A corresponds to the specified execution of the exercise, while the other 4 classes correspond to common mistakes. Participants were supervised by an experienced weight lifter to make sure the execution complied to the manner they were supposed to simulate. The exercises were performed by six male participants aged between 20-28 years, with little weight lifting experience. We made sure that all participants could easily simulate the mistakes in a safe and controlled manner by using a relatively light dumbbell (1.25kg).
+
+Read more: http://groupware.les.inf.puc-rio.br/har#dataset#ixzz3ljr8Yz7M
+
+# Exploratory Data Analysis
+
+```{r}
+str(pmltraining)
+names(pmltraining)
+```
+
