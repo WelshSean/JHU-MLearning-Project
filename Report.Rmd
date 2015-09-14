@@ -1,0 +1,22 @@
+---
+title: "Quantified Self Movement - Quality of Exercise"
+author: "Sean Clarke"
+date: "14 September 2015"
+output: html_document
+---
+```{r}
+# Download the data if we dont have it, then load te training data
+DataDir <- "Data"
+FilePathTrain <- paste(DataDir, "pml-training.csv", sep="/")
+FilePathTest <- paste(DataDir, "pml-testing.csv", sep="/")
+dir.create(DataDir, showWarnings=FALSE) 
+
+## Only download if the file doesnt exist
+if (! file.exists(FilePathTrain)){
+download.file("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv",FilePathTrain , method="curl")
+}
+if (! file.exists(FilePathTest)){
+download.file("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv",FilePathTest , method="curl")
+}
+pml-training <- read.csv(FilePathTrain, stringsAsFactors = FALSE)
+```
