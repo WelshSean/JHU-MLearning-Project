@@ -6,6 +6,8 @@ output: html_document
 ---
 ```{r}
 library(caret)
+library(randomForest)
+set.seed(1974)
 ```
 # Data preparation
 
@@ -57,12 +59,35 @@ Read more: http://groupware.les.inf.puc-rio.br/har#dataset#ixzz3ljr8Yz7M
 
 # Model Building
 
-Fit Initial Model in order to identify the importance of the predictors.
+Fit Initial Model in order to identify the importance of the predictors. We will use k-fold validation in order to allow us to cross-validate the model to improve the accuracy.
+
+We notice that we have a considerable number of missing values still.
+```{r}
+nrow(pmltraining)
+sum(complete.cases(pmltraining))
+```
+
+As a result of this we pick the Recursive Partitioning and Regression Trees (rpart) algorithm as it copes well with missing values unlike some other algorithms such as Random Forest.
 
 ```{r}
-testfit <- train(classe ~ ., data = pmltraining, method="rf",importance=TRUE)
-varImp(testfit)[[1]][1:20,]
+observed <- c()
+predicted <- c()
+folds <- createFolds(y=pmltraining$classe, k=10, list = TRUE, returnTrain = TRUE)
+for (i in 1:10){
+  foldtrain <- pmltraining[folds[[i]],]
+  foldtest <- pmltraining[-folds[[i]],]
+  foldfit <- train(classe ~ ., data = pmltraining, method="rpart")
+  observed <- c(observed, foldtest$classe)
+  predicted <- c(predicted, predict(foldfit, foldtest))
+  print(i)
+} 
 ```
+
+#```{r}
+#testfit <- train(classe ~ ., data = pmltraining, method="rf",importance=TRUE)
+##varImp(testfit)[[1]][1:20,]
+#vi <- varImp(testfit, scale=FALSE)
+#```
 
 ```{r}
 str(pmltraining)
