@@ -78,7 +78,7 @@ for (i in 1:10){
   foldtest <- pmltraining[-folds[[i]],]
   foldfit <- train(classe ~ ., data = pmltraining, method="rpart")
   observed <- c(observed, foldtest$classe)
-  predicted <- c(predicted, predict(foldfit, foldtest))
+  predicted <- c(predicted, predict(foldfit, foldtest, na.action=na.pass))
   print(i)
 } 
 ```
