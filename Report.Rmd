@@ -70,17 +70,19 @@ sum(complete.cases(pmltraining))
 As a result of this we pick the Recursive Partitioning and Regression Trees (rpart) algorithm as it copes well with missing values unlike some other algorithms such as Random Forest.
 
 ```{r}
-observed <- c()
-predicted <- c()
-folds <- createFolds(y=pmltraining$classe, k=10, list = TRUE, returnTrain = TRUE)
-for (i in 1:10){
-  foldtrain <- pmltraining[folds[[i]],]
-  foldtest <- pmltraining[-folds[[i]],]
-  foldfit <- train(classe ~ ., data = pmltraining, method="rpart")
-  observed <- c(observed, foldtest$classe)
-  predicted <- c(predicted, predict(foldfit, foldtest, na.action=na.pass))
-  print(i)
-} 
+# observed <- c()
+# predicted <- c()
+# folds <- createFolds(y=pmltraining$classe, k=10, list = TRUE, returnTrain = TRUE)
+# for (i in 1:10){
+#   foldtrain <- pmltraining[folds[[i]],]
+#   foldtest <- pmltraining[-folds[[i]],]
+#   foldfit <- train(classe ~ ., data = pmltraining, method="rpart")
+#   observed <- c(observed, foldtest$classe)
+#   predicted <- c(predicted, predict(foldfit, foldtest, na.action=na.pass))
+#   print(i)
+#}
+testfit <- train(classe ~ ., data = pmltraining, method="rpart")
+
 ```
 
 #```{r}
