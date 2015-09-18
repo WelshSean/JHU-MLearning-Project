@@ -7,9 +7,11 @@ output: html_document
 ```{r}
 library(caret)
 library(randomForest)
+library(rpart)
 set.seed(1974)
 ```
-# Data preparation
+
+# Data Acquisition
 
 ```{r}
 # Download the data if we dont have it, then load te training data
@@ -28,7 +30,21 @@ download.file("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.c
 pmltraining <- read.csv(FilePathTrain, stringsAsFactors = FALSE, na.strings = c("", "NA", "#DIV/0!"))
 ```
 
-When we read in the data, we tidy up some of the mess including NA as a string, "DIV/0!" and null cells by using the na.strings argument to read.csv. After doing this, we remove the first 7 columns as they contain extraneous tracking information and we also remove the  columns that contain nothing but NAs so we remove those and we convert classes to factors
+# Exploratory Analysis
+
+We begin by exploring the data in order to get a feel for it.
+```{r}
+dim(pmltraining)
+str(pmltraining)
+head(pmltraining,5)
+```
+
+
+# Data preparation
+
+
+
+When we read in the data, we tidy up some of the mess including "DIV/0!" and null cells by using the na.strings argument to read.csv. After doing this, we remove the first 7 columns as they contain extraneous tracking information and we also remove the  columns that contain nothing but NAs so we remove those and we convert classes to factors
 
 ```{r}
 pmltraining <- pmltraining[-(1:7)]
@@ -48,42 +64,87 @@ Next we remove any predictors with near-zero variance.
 ```{r}
 last <- ncol(pmltraining)
 nzv <- nearZeroVar(pmltraining[,-last], saveMetrics=FALSE)
-pmltraining <- pmltraining[-nzv]
+pmltraining <- pmltraining[,-nzv]
 ```
 
-# Data snipped from Web Page
-
-Class A corresponds to the specified execution of the exercise, while the other 4 classes correspond to common mistakes. Participants were supervised by an experienced weight lifter to make sure the execution complied to the manner they were supposed to simulate. The exercises were performed by six male participants aged between 20-28 years, with little weight lifting experience. We made sure that all participants could easily simulate the mistakes in a safe and controlled manner by using a relatively light dumbbell (1.25kg).
-
-Read more: http://groupware.les.inf.puc-rio.br/har#dataset#ixzz3ljr8Yz7M
+We see that there are still a considerable number of missing values
 
 # Model Building
 
 Fit Initial Model in order to identify the importance of the predictors. We will use k-fold validation in order to allow us to cross-validate the model to improve the accuracy.
 
 We notice that we have a considerable number of missing values still.
+
 ```{r}
 nrow(pmltraining)
-sum(complete.cases(pmltraining))
+colSums(is.na(pmltraining))
 ```
 
-As a result of this we pick the Recursive Partitioning and Regression Trees (rpart) algorithm as it copes well with missing values unlike some other algorithms such as Random Forest.
+We remove colums with more than 90% missing values
 
 ```{r}
-# observed <- c()
-# predicted <- c()
-# folds <- createFolds(y=pmltraining$classe, k=10, list = TRUE, returnTrain = TRUE)
-# for (i in 1:10){
-#   foldtrain <- pmltraining[folds[[i]],]
-#   foldtest <- pmltraining[-folds[[i]],]
-#   foldfit <- train(classe ~ ., data = pmltraining, method="rpart")
-#   observed <- c(observed, foldtest$classe)
-#   predicted <- c(predicted, predict(foldfit, foldtest, na.action=na.pass))
-#   print(i)
-#}
-testfit <- train(classe ~ ., data = pmltraining, method="rpart")
-
+pmltraining <- pmltraining[, colSums(is.na(pmltraining))/nrow(pmltraining) <= .9]
+colSums(is.na(pmltraining))
 ```
+
+This leaves us with no missing values which is pleasing as all the elimination of predictors that we have done has been based on pretty stringent requirements - we havent easily thrown data away. This also means that we dont need to do any imputation.
+
+
+COmpare RF and RPART
+
+```{r}
+#Creating a progress bar to know the status of CV
+#progress.bar <- create_progress_bar("text")
+#progress.bar$init(k)
+ observed <- c()
+ predicted <- c()
+ folds <- createFolds(y=pmltraining$classe, k=10, list = TRUE, returnTrain = TRUE)
+ for (i in 1:10){
+   foldtrain <- pmltraining[folds[[i]],]
+   foldtest <- pmltraining[-folds[[i]],]
+   last <- ncol(foldtest)
+   #foldfit <- train(classe ~ ., data = foldtrain, method="rf", preProcess = NULL)
+   foldfit <- randomForest(classe ~ ., data=foldtrain, method="class")
+   observed <- c(observed, foldtest$classe)
+   predicted <- c(predicted, predict(foldfit, foldtest[-last]))
+   print(i)
+ }
+results <- as.data.frame(cbind(observed,predicted))
+names(results) <- c("observed", "predicted")
+results$Difference <- abs(results$observed - results$predicted)
+summary(results$Difference)
+sqrt(mean((results$observed - results$predicted)^2))
+```
+
+```{r}
+#Creating a progress bar to know the status of CV
+#progress.bar <- create_progress_bar("text")
+#progress.bar$init(k)
+ observed <- c()
+ predicted <- c()
+ folds <- createFolds(y=pmltraining$classe, k=10, list = TRUE, returnTrain = TRUE)
+ for (i in 1:10){
+   foldtrain <- pmltraining[folds[[i]],]
+   foldtest <- pmltraining[-folds[[i]],]
+   last <- ncol(foldtest)
+   #foldfit <- train(classe ~ ., data = foldtrain, method="rf", preProcess = NULL)
+   foldfit <- rpart(classe ~ ., data=foldtrain, method="class")
+   observed <- c(observed, foldtest$classe)
+   predicted <- c(predicted, predict(foldfit, foldtest[-last]))
+   print(i)
+ }
+results <- as.data.frame(cbind(observed,predicted))
+names(results) <- c("observed", "predicted")
+results$Difference <- abs(results$observed - results$predicted)
+summary(results$Difference)
+sqrt(mean((results$observed - results$predicted)^2))
+```
+
+
+#```{r}
+#tfit <- train(classe ~ ., data=pmltraining, method="rpart")
+#tp <- predict(tfit, pmltraining, na.action = na.pass)
+#```
 
 #```{r}
 #testfit <- train(classe ~ ., data = pmltraining, method="rf",importance=TRUE)
@@ -91,8 +152,8 @@ testfit <- train(classe ~ ., data = pmltraining, method="rpart")
 #vi <- varImp(testfit, scale=FALSE)
 #```
 
-```{r}
-str(pmltraining)
-names(pmltraining)
-```
+#```{r}
+#str(pmltraining)
+#names(pmltraining)
+#```
 
