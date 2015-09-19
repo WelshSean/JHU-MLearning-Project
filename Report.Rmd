@@ -221,3 +221,22 @@ summary(FinalPredictions)
 # Conclusions
 
 Out of the two models that we considered, the Random Forest algorithm is clearly the most effective at modelling the training set. Care will need to be taken when applying the model to the test dataset in cae this was down to overfitting.
+
+
+```{r eval=FALSE,echo=FALSE}
+pml_write_files = function(x){
+  n = length(x)
+  for(i in 1:n){
+    filename = paste0("problem_id_",i,".txt")
+    write.table(x[i],file=filename,quote=FALSE,row.names=FALSE,col.names=FALSE)
+  }
+}
+wd <- getwd()
+Output <- as.character(FinalPredictions)
+setwd("/Users/Sean/Coursera_DataScience/JHU-MLearning-Project/Output")
+pml_write_files(Output)
+setwd(wd)
+
+```
+
+
