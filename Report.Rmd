@@ -8,6 +8,8 @@ output: html_document
 library(caret)
 library(randomForest)
 library(rpart)
+library(ggplot2)
+library(cowplot)
 set.seed(1974)
 ```
 
@@ -90,9 +92,9 @@ colSums(is.na(pmltraining))
 This leaves us with no missing values which is pleasing as all the elimination of predictors that we have done has been based on pretty stringent requirements - we havent easily thrown data away. This also means that we dont need to do any imputation.
 
 
-COmpare RF and RPART
+Compare RF and RPART
 
-```{r}
+```{r cache=FALSE}
 #Creating a progress bar to know the status of CV
 #progress.bar <- create_progress_bar("text")
 #progress.bar$init(k)
@@ -109,14 +111,17 @@ COmpare RF and RPART
    predicted <- c(predicted, predict(foldfit, foldtest[-last]))
    print(i)
  }
-results <- as.data.frame(cbind(observed,predicted))
-names(results) <- c("observed", "predicted")
-results$Difference <- abs(results$observed - results$predicted)
-summary(results$Difference)
-sqrt(mean((results$observed - results$predicted)^2))
+resultsRF <- as.data.frame(cbind(observed,predicted))
+names(resultsRF) <- c("observed", "predicted")
+resultsRF$Difference <- abs(resultsRF$observed - resultsRF$predicted)
+summary(resultsRF$Difference)
+sqrt(mean((resultsRF$observed - resultsRF$predicted)^2))
 ```
 
-```{r}
+
+
+
+```{r cache=FALSE}
 #Creating a progress bar to know the status of CV
 #progress.bar <- create_progress_bar("text")
 #progress.bar$init(k)
@@ -130,16 +135,27 @@ sqrt(mean((results$observed - results$predicted)^2))
    #foldfit <- train(classe ~ ., data = foldtrain, method="rf", preProcess = NULL)
    foldfit <- rpart(classe ~ ., data=foldtrain, method="class")
    observed <- c(observed, foldtest$classe)
-   predicted <- c(predicted, predict(foldfit, foldtest[-last]))
+   predicted <- c(predicted, predict(foldfit, foldtest[-last], type="class"))
    print(i)
  }
-results <- as.data.frame(cbind(observed,predicted))
-names(results) <- c("observed", "predicted")
-results$Difference <- abs(results$observed - results$predicted)
-summary(results$Difference)
-sqrt(mean((results$observed - results$predicted)^2))
+resultsRP <- as.data.frame(cbind(observed,predicted))
+names(resultsRP) <- c("observed", "predicted")
+resultsRP$Difference <- abs(resultsRP$observed - resultsRP$predicted)
+summary(resultsRP$Difference)
+sqrt(mean((resultsRP$observed - resultsRP$predicted)^2))
 ```
 
+```{r}
+plot1 <- ggplot(resultsRF, aes(observed, predicted)) + geom_point()
+plot1 <- plot1 + geom_jitter(position = position_jitter(width = .08, height=0.08)) 
+plot1 <- plot1 + geom_abline(intercept = 0, slope = 1, color="red")
+
+plot2 <- ggplot(resultsRP, aes(observed, predicted)) + geom_point()
+plot2 <- plot2 + geom_jitter(position = position_jitter(width = .08, height=0.08)) 
+plot2 <- plot2 + geom_abline(intercept = 0, slope = 1, color="red")
+
+plot_grid(plot1, plot2, ncol = 1, align = 'v')
+```
 
 #```{r}
 #tfit <- train(classe ~ ., data=pmltraining, method="rpart")
